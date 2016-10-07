@@ -2,7 +2,6 @@
 Search for pubs in an osm file and list their names.
 """
 import osmium
-import sys
 
 class NamesHandler(osmium.SimpleHandler):
 
