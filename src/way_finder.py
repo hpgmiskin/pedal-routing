@@ -1,9 +1,14 @@
 import sys
 import json
+import datetime
 import osmium
 
+import database
 import shape_tools
 import shape_plotter
+
+database = database.Database()
+database.connect()
 
 class WayHandler(osmium.SimpleHandler):
 
@@ -23,9 +28,26 @@ class WayHandler(osmium.SimpleHandler):
             coordinates.append((loc.lat,loc.lon))
 
         line = self.shape_tools.create_line(coordinates)
-        line_buffer = self.shape_tools.create_line_buffer(coordinates)
+        line_buffer_coordinates = self.shape_tools.get_line_buffer_coordinates(coordinates)
 
-        self.shape_plotter.plot_mappings([line,line_buffer])
+        query = dict(
+            location__geo_within_polygon=line_buffer_coordinates,
+            severity='Serious'
+        )
+        accidents = database.Accident.objects(**query)
+
+        if (accidents.count()):
+            print('{} accidents found'.format(accidents.count()))
+            line['label'] = 'Way'
+
+            line_buffer = self.shape_tools.create_line(line_buffer_coordinates)
+            line_buffer['label'] = 'Buffer'
+
+            accident_locations = {
+                'label':'Accidents',
+                'coordinates':[ accident.location['coordinates'] for accident in accidents ]
+            }
+            self.shape_plotter.plot_mappings([line,line_buffer,accident_locations])
 
 if (__name__ == "__main__"):
 

@@ -22,7 +22,7 @@ class ShapeTools:
         line = shapely.geometry.LineString(coordinates)
         return shapely.geometry.mapping(line)
 
-    def create_line_buffer(self,coordinates,offset=10):
+    def get_line_buffer_coordinates(self,coordinates,offset=10):
         """Find a buffer of a given line """
 
         # Take first point as reference
@@ -38,12 +38,12 @@ class ShapeTools:
         line_buffer = shapely.geometry.mapping(line_buffer)
         # print(len(line_buffer['coordinates']))
 
-        line_buffer_coordinates = []
+        line_buffer_offsets = []
         for section in line_buffer['coordinates']:
             for coordinate in section:
-                line_buffer_coordinates.append(coordinate)
+                line_buffer_offsets.append(coordinate)
 
         # Find coordinates of line buffer
-        coordinates = self.geom_tools.convert_offsets_to_coordinates(reference,line_buffer_coordinates)
+        line_buffer_coordinates = self.geom_tools.convert_offsets_to_coordinates(reference,line_buffer_offsets)
 
-        return self.create_line(coordinates)
+        return line_buffer_coordinates
