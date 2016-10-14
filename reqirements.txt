@@ -1,1 +1,2 @@
+Shapely==1.5.17
 pyosmium==2.9.0

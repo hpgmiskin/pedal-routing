@@ -1,6 +1,13 @@
 import sys
+import json
 import osmium
 import osmium.geom
+
+import shapely.speedups
+if shapely.speedups.available:
+    shapely.speedups.enable()
+
+import shapely.wkb
 
 class WayHandler(osmium.SimpleHandler):
 
@@ -13,11 +20,14 @@ class WayHandler(osmium.SimpleHandler):
         if ('name' in way.tags): print(way.tags['name'])
         else: print('No name')
 
-        # print(dir(way.nodes))
         linestring = self.geom_factory.create_linestring(way)
         print(linestring)
+
+        linestring = shapely.wkb.loads(linestring, hex=True)
+        print(linestring)
         print(dir(linestring))
-        # sys.exit()
+
+        sys.exit()
 
         for node in way.nodes:
             loc = idx.get(node.ref)
