@@ -5,8 +5,7 @@ class GeomTools:
     R = 6378137
 
     def calculate_offset(self,coordinate_a,coordinate_b):
-        """Find the horizontal and vertical offset between coordinates
-        """
+        """Find the horizontal and vertical offset between coordinates"""
 
         [lat_a,lng_a] = coordinate_a
         [lat_b,lng_b] = coordinate_b
@@ -18,8 +17,7 @@ class GeomTools:
 
 
     def calculate_coordinate(self,coordinate,offset):
-        """Find the coordinate offset by given amount from coordinate
-        """
+        """Find the coordinate offset by given amount from coordinate"""
 
         [lat_a,lng_a] = coordinate
         [x,y] = offset
@@ -29,6 +27,21 @@ class GeomTools:
 
         return [lat_b,lng_b]
 
+    def convert_coordinates_to_offsets(self,reference,coordinates):
+        """Find all offsets for given coordinates from reference"""
+
+        return [
+            self.calculate_offset(reference,coordinate)
+            for coordinate in coordinates
+        ]
+
+    def convert_offsets_to_coordinates(self,reference,offsets):
+        """Find all coordinates for given offsets from reference"""
+
+        return [
+            self.calculate_coordinate(reference,offset)
+            for offset in offsets
+        ]
 
 
 if (__name__ == "__main__"):
