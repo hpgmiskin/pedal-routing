@@ -21,11 +21,9 @@ class WayHandler(osmium.SimpleHandler):
         else: print('No name')
 
         linestring = self.geom_factory.create_linestring(way)
-        print(linestring)
-
-        linestring = shapely.wkb.loads(linestring, hex=True)
-        print(linestring)
-        print(dir(linestring))
+        line = shapely.wkb.loads(linestring, hex=True)
+        print(line)
+        print(line.buffer(10))
 
         sys.exit()
 
