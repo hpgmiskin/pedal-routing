@@ -1,14 +1,24 @@
+import sys
 import osmium
+import osmium.geom
 
 class WayHandler(osmium.SimpleHandler):
 
-    def __init__(self, idx):
+    def __init__(self, idx, geom_factory=osmium.geom.WKBFactory()):
         osmium.SimpleHandler.__init__(self)
         self.idx = idx
+        self.geom_factory = geom_factory
 
     def way(self, way):
         if ('name' in way.tags): print(way.tags['name'])
         else: print('No name')
+
+        # print(dir(way.nodes))
+        linestring = self.geom_factory.create_linestring(way)
+        print(linestring)
+        print(dir(linestring))
+        # sys.exit()
+
         for node in way.nodes:
             loc = idx.get(node.ref)
             print('\t',loc.lat,loc.lon)
