@@ -21,3 +21,5 @@ class Accident(Document):
     meta = dict(
         collection = 'accidents'
     )
+
+    

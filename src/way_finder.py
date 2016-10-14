@@ -19,8 +19,10 @@ class WayHandler(osmium.SimpleHandler):
         self.shape_plotter = shape_plotter
 
     def way(self, way):
-        if ('name' in way.tags): print(way.tags['name'])
-        else: print('No name')
+
+        def way_name():
+            if ('name' in way.tags):
+                return way.tags['name']
 
         coordinates = []
         for node in way.nodes:
@@ -31,23 +33,33 @@ class WayHandler(osmium.SimpleHandler):
         line_buffer_coordinates = self.shape_tools.get_line_buffer_coordinates(coordinates)
 
         query = dict(
+            date__gte=datetime.date(2014, 1, 1),
             location__geo_within_polygon=line_buffer_coordinates,
             severity='Serious'
         )
         accidents = database.Accident.objects(**query)
 
         if (accidents.count()):
-            print('{} accidents found'.format(accidents.count()))
-            line['label'] = 'Way'
 
-            line_buffer = self.shape_tools.create_line(line_buffer_coordinates)
-            line_buffer['label'] = 'Buffer'
+            print('{} - {} accidents found [{},{}]'.format(way_name(),accidents.count(),coordinates[0],coordinates[-1]))
+            print('https://www.google.co.uk/maps/dir/{},{}/{},{}'.format(
+                coordinates[0][0],
+                coordinates[0][1],
+                coordinates[-1][0],
+                coordinates[-1][1]
+            ))
 
-            accident_locations = {
-                'label':'Accidents',
-                'coordinates':[ accident.location['coordinates'] for accident in accidents ]
-            }
-            self.shape_plotter.plot_mappings([line,line_buffer,accident_locations])
+            if (accidents.count() > 2):
+
+                line['label'] = 'Way'
+                line_buffer = self.shape_tools.create_line(line_buffer_coordinates)
+                line_buffer['label'] = 'Buffer'
+
+                accident_locations = {
+                    'label':'Accidents',
+                    'coordinates':[ accident.location['coordinates'] for accident in accidents ]
+                }
+                self.shape_plotter.plot_mappings([line,line_buffer,accident_locations])
 
 if (__name__ == "__main__"):
 
