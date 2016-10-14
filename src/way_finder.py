@@ -1,56 +1,31 @@
 import sys
 import json
 import osmium
-import osmium.geom
 
-import shapely.speedups
-if shapely.speedups.available:
-    shapely.speedups.enable()
-
-import shapely.wkb
-import shapely.geometry
-
-import geom_tools
+import shape_tools
+import shape_plotter
 
 class WayHandler(osmium.SimpleHandler):
 
-    def __init__(self, idx, geom_factory=osmium.geom.WKBFactory(), geom_tools=geom_tools.GeomTools()):
+    def __init__(self, idx, shape_tools=shape_tools.ShapeTools(), shape_plotter=shape_plotter.ShapePlotter()):
         osmium.SimpleHandler.__init__(self)
         self.idx = idx
-        self.geom_factory = geom_factory
-        self.geom_tools = geom_tools
+        self.shape_tools = shape_tools
+        self.shape_plotter = shape_plotter
 
     def way(self, way):
         if ('name' in way.tags): print(way.tags['name'])
         else: print('No name')
 
-        linestring = self.geom_factory.create_linestring(way.nodes)
-        lat_lng_line = shapely.wkb.loads(linestring, hex=True)
-
-        # line_coordinates = shapely.geometry.mapping(line)
-        reference = lat_lng_line.bounds[:2]
-        print('reference',reference)
-        coordinates = lat_lng_line.coords[:]
-        print('coordinates',coordinates)
-
-        # Find meter offsets
-        offsets = self.geom_tools.convert_coordinates_to_offsets(reference,coordinates)
-        meter_line = shapely.geometry.LineString(offsets)
-        meter_line_buffer = meter_line.buffer(10)
-
-        data = [
-            shapely.geometry.mapping(meter_line),
-            shapely.geometry.mapping(meter_line_buffer)
-        ]
-
-        print(data)
-
-        sys.exit()
-
+        coordinates = []
         for node in way.nodes:
             loc = idx.get(node.ref)
-            print('\t',loc.lat,loc.lon)
+            coordinates.append((loc.lat,loc.lon))
 
+        line = self.shape_tools.create_line(coordinates)
+        line_buffer = self.shape_tools.create_line_buffer(coordinates)
+
+        self.shape_plotter.plot_mappings([line,line_buffer])
 
 if (__name__ == "__main__"):
 
