@@ -1,2 +1,9 @@
-Shapely==1.5.17
+cycler==0.10.0
+matplotlib==1.5.3
+numpy==1.11.2
 pyosmium==2.9.0
+pyparsing==2.1.10
+python-dateutil==2.5.3
+pytz==2016.7
+Shapely==1.5.17
+six==1.10.0

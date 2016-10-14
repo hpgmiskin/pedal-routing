@@ -8,6 +8,7 @@ if shapely.speedups.available:
     shapely.speedups.enable()
 
 import shapely.wkb
+import shapely.geometry
 
 class WayHandler(osmium.SimpleHandler):
 
@@ -22,8 +23,14 @@ class WayHandler(osmium.SimpleHandler):
 
         linestring = self.geom_factory.create_linestring(way)
         line = shapely.wkb.loads(linestring, hex=True)
-        print(line)
-        print(line.buffer(10))
+        line_buffer = line.buffer(10)
+
+        data = [
+            shapely.geometry.mapping(line),
+            shapely.geometry.mapping(line_buffer)
+        ]
+
+        print(data)
 
         sys.exit()
 
