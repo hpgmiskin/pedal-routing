@@ -10,19 +10,60 @@ import shape_plotter
 database = database.Database()
 database.connect()
 
+def replace_print(message):
+    sys.stdout.write('\r')
+    sys.stdout.flush()
+    sys.stdout.write(message)
+    sys.stdout.flush()
+
+class Counter(osmium.SimpleHandler):
+
+    def __init__(self,filename):
+        osmium.SimpleHandler.__init__(self)
+        self.nodes = 0
+        self.ways = 0
+        self.relations = 0
+
+        print('Counting')
+        self.apply_file(filename)
+        print('Found {} nodes, {} ways and {} relations'.format(self.nodes,self.ways,self.relations))
+
+    def node(self, node):
+        self.nodes += 1
+
+    def way(self, way):
+        self.ways += 1
+
+    def relation(self, relation):
+        self.relations += 1
+
+
 class WayHandler(osmium.SimpleHandler):
 
-    def __init__(self, idx, shape_tools=shape_tools.ShapeTools(), shape_plotter=shape_plotter.ShapePlotter()):
+    def __init__(self, idx, counter, writer, shape_tools=shape_tools.ShapeTools(), shape_plotter=shape_plotter.ShapePlotter()):
         osmium.SimpleHandler.__init__(self)
         self.idx = idx
+        self.ways = 0
+        self.counter = counter
+        self.writer = writer
         self.shape_tools = shape_tools
         self.shape_plotter = shape_plotter
+
+
+    def node(self, node):
+        self.writer.add_node(node)
 
     def way(self, way):
 
         def way_name():
             if ('name' in way.tags):
                 return way.tags['name']
+
+        def way_collisions():
+            if ('collisions' in way.tags):
+                return way.tags['collisions']
+
+        # print(way_name(),way_collisions())
 
         coordinates = []
         for node in way.nodes:
@@ -39,38 +80,37 @@ class WayHandler(osmium.SimpleHandler):
         )
         accidents = database.Accident.objects(**query)
 
-        if (accidents.count()):
+        tags = [tag for tag in way.tags]
+        tags.append(('collisions',str(accidents.count())))
 
-            print('{} - {} accidents found [{},{}]'.format(way_name(),accidents.count(),coordinates[0],coordinates[-1]))
-            print('https://www.google.co.uk/maps/dir/{},{}/{},{}'.format(
-                coordinates[0][0],
-                coordinates[0][1],
-                coordinates[-1][0],
-                coordinates[-1][1]
-            ))
+        self.ways += 1
+        percent = int(100 * self.ways / self.counter.ways)
+        replace_print('{}/{} ways processed ({}%)'.format(self.ways,self.counter.ways,percent))
+        self.writer.add_way(way.replace(tags=tags))
 
-            if (accidents.count() > 2):
-
-                line['label'] = 'Way'
-                line_buffer = self.shape_tools.create_line(line_buffer_coordinates)
-                line_buffer['label'] = 'Buffer'
-
-                accident_locations = {
-                    'label':'Accidents',
-                    'coordinates':[ accident.location['coordinates'] for accident in accidents ]
-                }
-                self.shape_plotter.plot_mappings([line,line_buffer,accident_locations])
+    def relation(self, relation):
+        self.writer.add_relation(relation)
 
 if (__name__ == "__main__"):
+
+    input_file = 'data/greater-london-latest.osm.pbf'
+    output_file = 'data/greater-london-collisions.osm.pbf'
+
+    counter = Counter(input_file)
 
     idx = osmium.index.create_map('sparse_file_array,data/node-cache.nodecache')
     locations = osmium.NodeLocationsForWays(idx)
     locations.ignore_errors()
 
-    nodes = osmium.io.Reader('data/greater-london-latest.osm.pbf', osmium.osm.osm_entity_bits.NODE)
+    writer = osmium.SimpleWriter(output_file)
+    handler = WayHandler(idx,counter,writer)
+
+    nodes = osmium.io.Reader(input_file, osmium.osm.osm_entity_bits.NODE)
     osmium.apply(nodes, locations)
     nodes.close()
 
-    ways = osmium.io.Reader('data/greater-london-latest.osm.pbf', osmium.osm.osm_entity_bits.WAY)
-    osmium.apply(ways, locations, WayHandler(idx))
+    ways = osmium.io.Reader(input_file, osmium.osm.osm_entity_bits.WAY)
+    osmium.apply(ways, locations, handler)
     ways.close()
+
+    writer.close()
